@@ -1,0 +1,193 @@
+@import "tailwindcss";
+
+/* Palette : bois foncé, crème, beige, vert forêt, braise */
+@theme {
+  --color-bark-950: #1c130d;
+  --color-bark-900: #2a1c13;
+  --color-bark-800: #3b281b;
+  --color-bark-700: #533a27;
+  --color-bark-600: #6e4e35;
+  --color-bark-500: #8a6646;
+  --color-cream-50: #fcfaf6;
+  --color-cream-100: #f7f2ea;
+  --color-cream-200: #efe6d8;
+  --color-cream-300: #e3d5bf;
+  --color-cream-400: #cdb999;
+  --color-forest-50: #eef3ef;
+  --color-forest-600: #3a5a46;
+  --color-forest-700: #2e4a39;
+  --color-forest-800: #233a2c;
+  --color-ember-500: #c2662d;
+  --color-ember-600: #a85322;
+  --color-ember-700: #8b431b;
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-serif: var(--font-fraunces), ui-serif, Georgia, "Times New Roman", serif;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+/* Défilement animé, sauf si l'utilisateur a demandé à réduire les animations */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+body {
+  background: var(--color-cream-50);
+  color: var(--color-bark-900);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-ember-500);
+  outline-offset: 2px;
+}
+
+@layer components {
+  .container-page {
+    width: 100%;
+    max-width: 76rem;
+    margin-inline: auto;
+    padding-inline: 1rem;
+  }
+  @media (min-width: 640px) {
+    .container-page {
+      padding-inline: 1.5rem;
+    }
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 3rem;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    font-size: 1rem;
+    line-height: 1.25;
+    text-align: center;
+    transition:
+      background-color 0.15s,
+      color 0.15s,
+      border-color 0.15s;
+    cursor: pointer;
+  }
+  .btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+  .btn-primary {
+    background: var(--color-ember-600);
+    color: #fff;
+  }
+  @media (hover: hover) {
+    .btn-primary:hover:not(:disabled) {
+      background: var(--color-ember-700);
+    }
+  }
+  .btn-dark {
+    background: var(--color-bark-900);
+    color: var(--color-cream-50);
+  }
+  @media (hover: hover) {
+    .btn-dark:hover:not(:disabled) {
+      background: var(--color-bark-700);
+    }
+  }
+  .btn-outline {
+    border: 1.5px solid var(--color-bark-800);
+    color: var(--color-bark-900);
+    background: transparent;
+  }
+  @media (hover: hover) {
+    .btn-outline:hover:not(:disabled) {
+      background: var(--color-bark-900);
+      color: var(--color-cream-50);
+    }
+  }
+  .btn-light {
+    border: 1.5px solid rgb(255 255 255 / 0.8);
+    color: #fff;
+    background: rgb(255 255 255 / 0.06);
+    backdrop-filter: blur(4px);
+  }
+  @media (hover: hover) {
+    .btn-light:hover {
+      background: #fff;
+      color: var(--color-bark-900);
+    }
+  }
+
+  .field-label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-bark-800);
+    margin-bottom: 0.375rem;
+  }
+  .field {
+    display: block;
+    width: 100%;
+    min-height: 3rem;
+    padding: 0.625rem 0.875rem;
+    border: 1px solid var(--color-cream-400);
+    border-radius: 0.5rem;
+    background: #fff;
+    font-size: 1rem; /* 16px : évite le zoom automatique sur iPhone */
+    color: var(--color-bark-900);
+  }
+  .field:focus {
+    outline: none;
+    border-color: var(--color-ember-500);
+    box-shadow: 0 0 0 3px rgb(194 102 45 / 0.2);
+  }
+  .field[aria-invalid="true"] {
+    border-color: #b42318;
+  }
+
+  .eyebrow {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-ember-600);
+  }
+
+  .prose-page h2 {
+    font-family: var(--font-serif);
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-top: 2.5rem;
+    margin-bottom: 0.75rem;
+    color: var(--color-bark-900);
+  }
+  .prose-page h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+  }
+  .prose-page p,
+  .prose-page li {
+    color: var(--color-bark-700);
+    line-height: 1.75;
+  }
+  .prose-page p + p {
+    margin-top: 0.75rem;
+  }
+  .prose-page ul {
+    list-style: disc;
+    padding-left: 1.25rem;
+    margin-top: 0.5rem;
+  }
+  .prose-page a {
+    color: var(--color-ember-700);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+}
