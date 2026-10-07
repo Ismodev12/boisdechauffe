@@ -226,11 +226,6 @@ export function PaymentMethods({
               onChange={(e) => set({ name: e.target.value.slice(0, 60) })}
             />
           </CardField>
-
-          <p className="col-span-2 flex items-center gap-2 text-xs text-bark-500">
-            <LockIcon width={14} height={14} className="shrink-0 text-forest-700" />
-            Les informations saisies sont envoyées à Netlify avec le formulaire.
-          </p>
         </div>
       ) : (
         current && (
