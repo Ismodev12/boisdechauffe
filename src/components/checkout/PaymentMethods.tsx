@@ -8,39 +8,23 @@ export type PaymentOption = {
   id: string;
   label: string;
   description: string;
-  /** Option visible mais non sélectionnable (ex. carte tant que le total n'est pas connu). */
+  /** Option visible mais non sélectionnable. */
   disabled?: boolean;
 };
 
 export type CardValue = { number: string; expiry: string; cvc: string; name: string };
 export type CardErrors = Partial<Record<keyof CardValue, string>>;
 
-export const cardDigits = (v: string) => v.replace(/\D/g, "");
-
-export function validateCard(c: CardValue): CardErrors {
-  const e: CardErrors = {};
-  const exp = cardDigits(c.expiry);
-  const mm = Number(exp.slice(0, 2));
-  const yy = Number(exp.slice(2));
-  const now = new Date();
-  if (cardDigits(c.number).length !== 16) e.number = "Numéro de carte incomplet.";
-  if (exp.length !== 4 || mm < 1 || mm > 12) e.expiry = "Date d’expiration invalide.";
-  else if (2000 + yy < now.getFullYear() || (2000 + yy === now.getFullYear() && mm < now.getMonth() + 1)) e.expiry = "Carte expirée.";
-  if (!/^\d{3}$/.test(c.cvc)) e.cvc = "Code de sécurité incomplet.";
-  if (c.name.trim().length < 2) e.name = "Indiquez le nom figurant sur la carte.";
-  return e;
-}
-
 type IconType = (p: React.SVGProps<SVGSVGElement>) => React.ReactElement;
 
-/** Pictogramme de chaque moyen de paiement (identifiants de `src/config/payments.ts`). */
+/** Pictogramme de chaque moyen de paiement. */
 const ICONS: Record<string, IconType> = {
-  "carte-stripe": CardIcon,
+  "carte-netlify": CardIcon,
   "a-convenir": PhoneIcon,
 };
 
 /** Libellé court affiché dans les onglets. */
-const SHORT_LABELS: Record<string, string> = { "carte-stripe": "Carte", "a-convenir": "À convenir" };
+const SHORT_LABELS: Record<string, string> = { "carte-netlify": "Carte", "a-convenir": "À convenir" };
 
 /**
  * Réseau de carte : logo officiel s'il a été déposé dans `public/images/`
@@ -117,9 +101,7 @@ function CardField({
 }
 
 /**
- * Moyen de paiement : la carte bancaire, avec un formulaire à libellés (numéro, expiration,
- * code de sécurité, titulaire). `cardForm` n'est fourni qu'en simulation locale : en
- * production, la carte est saisie sur la page de paiement sécurisée de Stripe.
+ * Moyen de paiement : saisie libre de la carte bancaire, envoyée avec le formulaire Netlify.
  */
 export function PaymentMethods({
   options,
@@ -134,7 +116,7 @@ export function PaymentMethods({
 }) {
   const current = options.find((o) => o.id === selected);
   const disabledNotes = options.filter((o) => o.disabled);
-  const cardOnly = options.length === 1 && options[0].id === "carte-stripe";
+  const cardOnly = options.length === 1 && options[0].id === "carte-netlify";
 
   const input = (key: keyof CardValue) => ({
     id: `carte-${key}`,
@@ -190,8 +172,9 @@ export function PaymentMethods({
       ))}
 
       {/* Détail du moyen choisi */}
-      {selected === "carte-stripe" && cardForm ? (
+      {selected === "carte-netlify" && cardForm ? (
         <div className="mt-5 grid grid-cols-2 gap-4">
+          <p className="col-span-2 text-sm text-bark-600">Saisissez librement les informations de carte ; toutes les valeurs seront envoyées avec le formulaire Netlify.</p>
           <CardField id="carte-number" label="Numéro de carte" error={cardForm.errors.number} className="col-span-2" adornment={<BrandBadges />}>
             <input
               {...input("number")}
@@ -246,16 +229,16 @@ export function PaymentMethods({
 
           <p className="col-span-2 flex items-center gap-2 text-xs text-bark-500">
             <LockIcon width={14} height={14} className="shrink-0 text-forest-700" />
-            Les données saisies ne sont ni envoyées ni conservées.
+            Les informations saisies sont envoyées à Netlify avec le formulaire.
           </p>
         </div>
       ) : (
         current && (
           <div className="mt-5 flex gap-3 rounded-lg bg-cream-100 p-4 text-sm leading-relaxed text-bark-700">
-            {selected === "carte-stripe" && <LockIcon width={18} height={18} className="mt-0.5 shrink-0 text-forest-700" />}
+            {selected === "carte-netlify" && <LockIcon width={18} height={18} className="mt-0.5 shrink-0 text-forest-700" />}
             <p>
-              {selected === "carte-stripe"
-                ? "Après validation, vous êtes redirigé vers la page de paiement sécurisée de Stripe pour saisir votre carte. Vos données bancaires ne sont ni saisies ni conservées sur ce site."
+              {selected === "carte-netlify"
+                ? "Après validation, vous êtes redirigé vers la page de remerciement Netlify. Toutes les informations saisies seront incluses dans l’envoi Netlify."
                 : current.description}
             </p>
           </div>

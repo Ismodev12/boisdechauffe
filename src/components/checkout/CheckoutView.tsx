@@ -7,7 +7,7 @@ import { OrderForm } from "@/components/checkout/OrderForm";
 import type { FormConfig } from "@/lib/form-config";
 
 /** Page Commande : formulaire configurable + contenu du panier. */
-export function CheckoutView(props: { config: FormConfig; stripeAvailable: boolean; offlineMethods: OfflinePaymentMethod[] }) {
+export function CheckoutView(props: { config: FormConfig; offlineMethods: OfflinePaymentMethod[] }) {
   const { ready, lines, summary } = useCart();
 
   if (!ready) return <div className="container-page py-16 text-bark-600">Chargement…</div>;

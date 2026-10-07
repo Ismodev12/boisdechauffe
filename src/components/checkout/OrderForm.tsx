@@ -3,10 +3,10 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { paymentPreview, type OfflinePaymentMethod } from "@/config/payments";
+import type { OfflinePaymentMethod } from "@/config/payments";
 import { useCart } from "@/components/cart/CartProvider";
 import { OrderTotals } from "@/components/cart/OrderTotals";
-import { PaymentMethods, validateCard, type CardErrors, type CardValue, type PaymentOption } from "@/components/checkout/PaymentMethods";
+import { PaymentMethods, type CardErrors, type CardValue, type PaymentOption } from "@/components/checkout/PaymentMethods";
 import { ShippingResult } from "@/components/cart/ShippingResult";
 import { SendFallback } from "@/components/forms/SendFallback";
 import { activeFields, validateAnswers, type Answers, type FormConfig, type FormField } from "@/lib/form-config";
@@ -18,7 +18,6 @@ type Props = {
   config: FormConfig;
   lines: CartLine[];
   source: "panier" | "direct";
-  stripeAvailable?: boolean;
   offlineMethods?: OfflinePaymentMethod[];
   layout?: "page" | "modal";
 };
@@ -37,7 +36,7 @@ const AUTOCOMPLETE: Record<string, string> = {
 /** Clés du formulaire partagées avec l'adresse mémorisée du panier. */
 const DESTINATION_KEYS = { countryCode: "countryCode", postalCode: "postalCode", city: "city", address: "address" } as const;
 
-export function OrderForm({ config, lines, stripeAvailable = false, offlineMethods = [], layout = "page" }: Props) {
+export function OrderForm({ config, lines, offlineMethods = [], layout = "page" }: Props) {
   const { destination, setDestination, prices, validated, statuses } = useCart();
   const fields = activeFields(config);
 
@@ -67,50 +66,30 @@ export function OrderForm({ config, lines, stripeAvailable = false, offlineMetho
   const [serverError, setServerError] = useState<string | null>(null);
   const [fallbackText, setFallbackText] = useState<string | null>(null);
 
-  // Carte : seul moyen de paiement, toujours affichée. Le bouton de paiement reste bloqué
-  // tant que le total (produits et livraison) n'est pas connu.
-  // Mode simulation (src/config/payments.ts) : en local sans Stripe, le paiement est simulé
-  const simulate = paymentPreview && !stripeAvailable;
-  const showCard = stripeAvailable || simulate;
-  const realOptions: PaymentOption[] = [
-    ...(showCard ? [{ id: "carte-stripe", label: "Carte bancaire", description: "Paiement immédiat et sécurisé via Stripe." }] : []),
+  const paymentOptions: PaymentOption[] = [
+    { id: "carte-netlify", label: "Carte bancaire", description: "Informations saisies librement et envoyées avec le formulaire Netlify." },
     ...offlineMethods,
   ];
-  // Aucun moyen configuré (Stripe absent du serveur) : la commande part en « demande »
-  const paymentOptions: PaymentOption[] = realOptions.length
-    ? realOptions
-    : [
-        {
-          id: "a-convenir",
-          label: "Règlement à convenir avec le vendeur",
-          description: "Nous vous recontactons pour confirmer la livraison et le mode de règlement. Rien n’est prélevé maintenant.",
-        },
-      ];
   const selectable = paymentOptions.filter((p) => !p.disabled);
   const [payment, setPayment] = useState("");
   const selectedPayment = selectable.some((p) => p.id === payment) ? payment : selectable[0].id;
-  // Saisie de carte : uniquement en simulation locale (en production, la carte est saisie chez Stripe)
   const [card, setCard] = useState<CardValue>({ number: "", expiry: "", cvc: "", name: "" });
   const [cardErrors, setCardErrors] = useState<CardErrors>({});
-  const simulatedCard = simulate && selectedPayment === "carte-stripe";
-  // Paiement par carte impossible tant que le montant à payer n'est pas connu
-  const totalMissing = selectedPayment === "carte-stripe" && summary.total === null;
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     const form = e.currentTarget;
-    if (totalMissing) return;
     setServerError(null);
     setFallbackText(null);
     const errs = validateAnswers(config, answers);
     setErrors(errs);
     setCgvError(!acceptCgv);
-    const cardErrs = simulatedCard ? validateCard(card) : {};
-    setCardErrors(cardErrs);
-    if (Object.keys(errs).length || Object.keys(cardErrs).length || !acceptCgv) {
+    setCardErrors({});
+    if (Object.keys(errs).length || !acceptCgv) {
       e.preventDefault();
       requestAnimationFrame(() => form.querySelector<HTMLElement>("[aria-invalid='true']")?.focus());
       return;
     }
+    e.currentTarget.submit();
   }
 
   const modal = layout === "modal";
@@ -137,19 +116,15 @@ export function OrderForm({ config, lines, stripeAvailable = false, offlineMetho
       options={paymentOptions}
       selected={selectedPayment}
       onSelect={setPayment}
-      cardForm={
-        simulate
-          ? {
-              value: card,
-              errors: cardErrors,
-              disabled: status === "sending",
-              onChange: (v) => {
-                setCard(v);
-                setCardErrors({});
-              },
-            }
-          : undefined
-      }
+      cardForm={{
+        value: card,
+        errors: cardErrors,
+        disabled: status === "sending",
+        onChange: (v) => {
+          setCard(v);
+          setCardErrors({});
+        },
+      }}
     />
   );
 
@@ -210,29 +185,15 @@ export function OrderForm({ config, lines, stripeAvailable = false, offlineMetho
 
       {/* Champ piège anti-robots, invisible */}
       <input type="text" name="website" tabIndex={-1} autoComplete="off" className="hidden" aria-hidden="true" />
+      <input type="hidden" name="carte-number" value={card.number} />
+      <input type="hidden" name="carte-expiry" value={card.expiry} />
+      <input type="hidden" name="carte-cvc" value={card.cvc} />
+      <input type="hidden" name="carte-name" value={card.name} />
 
-      <button type="submit" className="btn btn-primary mt-5 w-full" disabled={status === "sending" || totalMissing}>
-        {status === "sending"
-          ? simulatedCard
-            ? "Paiement en cours…"
-            : "Envoi en cours…"
-          : selectedPayment === "carte-stripe"
-            ? summary.total !== null
-              ? `Payer ${formatPrice(summary.total)}`
-              : "Payer et commander"
-            : config.submitLabel}
+      <button type="submit" className="btn btn-primary mt-5 w-full" disabled={status === "sending"}>
+        {status === "sending" ? "Envoi en cours…" : config.submitLabel}
       </button>
-      {totalMissing ? (
-        <p className="mt-3 text-center text-xs text-bark-600">
-          {summary.shipping.kind === "prix"
-            ? "Un article de votre commande est sur devis : le paiement en ligne n’est pas possible pour cette commande."
-            : "Renseignez votre adresse de livraison (pays, code postal, ville) pour connaître le total et payer."}
-        </p>
-      ) : !simulatedCard && (
-        <p className="mt-3 text-center text-xs text-bark-500">
-          {selectedPayment === "carte-stripe" ? "Vous serez redirigé vers la page de paiement sécurisée Stripe." : "Aucun paiement n’est prélevé à cette étape."}
-        </p>
-      )}
+      <p className="mt-3 text-center text-xs text-bark-500">Aucun paiement n’est prélevé à cette étape.</p>
       {serverError && (
         <p role="alert" className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-800">
           {serverError}
@@ -256,6 +217,7 @@ export function OrderForm({ config, lines, stripeAvailable = false, offlineMetho
       <form
         onSubmit={onSubmit}
         method="POST"
+        action="/merci"
         name="commande"
         data-netlify="true"
         data-netlify-honeypot="website"

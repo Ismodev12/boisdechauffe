@@ -3,7 +3,6 @@ import { PageHeader } from "@/components/PageHeader";
 import { CheckoutView } from "@/components/checkout/CheckoutView";
 import { pageMetadata } from "@/lib/seo";
 import { getFormConfig } from "@/server/form-store";
-import { stripeEnabled } from "@/server/stripe";
 
 export const dynamic = "force-dynamic"; // le formulaire peut être modifié à tout moment depuis l'admin
 
@@ -21,7 +20,7 @@ export default async function CheckoutPage() {
   return (
     <>
       <PageHeader title="Finaliser ma commande" crumbs={[{ href: "/panier", label: "Panier" }, { href: "/commande", label: "Commande" }]} />
-      <CheckoutView config={config} stripeAvailable={stripeEnabled()} offlineMethods={enabledOfflineMethods()} />
+      <CheckoutView offlineMethods={enabledOfflineMethods()} config={config} />
     </>
   );
 }
